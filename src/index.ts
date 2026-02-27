@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 import cron from 'node-cron';
 import { scrapeAemet } from './scrapers/aemet';
 import { scrapeSaih } from './scrapers/saih';
@@ -10,6 +12,12 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
+
+app.use(cors());
+
+const CACHE_FILE = process.env.NODE_ENV === 'production'
+    ? '/tmp/hydro_cache.json'
+    : path.join(__dirname, 'hydro_cache.json');
 
 // Global Cache Object
 let cachedData: any = {
@@ -127,6 +135,13 @@ async function runScrapers() {
             status: computeOverallStatus(validWeather ? weather : [], validRivers ? rivers : [], validReservoirs ? reservoirs : [])
         };
 
+        // Persist to local cache file
+        try {
+            fs.writeFileSync(CACHE_FILE, JSON.stringify(cachedData), 'utf-8');
+        } catch (fsErr) {
+            console.error('No se pudo guardar la caché local:', fsErr);
+        }
+
         console.log(`[${new Date().toISOString()}] Scraping finalizado con éxito (Core + Secondary).`);
     } catch (error) {
         console.error('Error durante la ejecución de scrapers:', error);
@@ -148,6 +163,17 @@ app.get('/api/status', (req, res) => {
 // Start Server and Cron
 app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Server is running at http://0.0.0.0:${PORT}`);
+
+    // Try to load from cache before initial scraping
+    if (fs.existsSync(CACHE_FILE)) {
+        try {
+            const raw = fs.readFileSync(CACHE_FILE, 'utf-8');
+            cachedData = JSON.parse(raw);
+            console.log(`[${new Date().toISOString()}] Caché local restaurada desde ${CACHE_FILE}`);
+        } catch (err) {
+            console.error('Error leyendo la caché local:', err);
+        }
+    }
 
     // Initial scraping on startup (takes a long time but fills data immediately)
     await runScrapers();
