@@ -30,7 +30,8 @@ let cachedData: any = {
         tides: 'Pleamar a las 14:30 (Coef. 85). Peligro de taponamiento en desembocadura.',
         wind: 'SO 45km/h, rachas 75km/h. Temporal fuerte en el Golfo de Cádiz.'
     },
-    forecast: 'Precipitaciones fuertes persistentes (Alerta Naranja AEMET). Riesgo inminente de desbordamiento en La Greduela, Portal y zonas bajas de Jerez.'
+    forecast: 'Precipitaciones fuertes persistentes (Alerta Naranja AEMET). Riesgo inminente de desbordamiento en La Greduela, Portal y zonas bajas de Jerez.',
+    warnings: [] as string[]
 };
 
 async function runScrapers() {
@@ -122,6 +123,7 @@ async function runScrapers() {
                 wind: `${coastal.wind.direction} ${coastal.wind.speed}km/h, rachas ${coastal.wind.gusts}km/h.`
             },
             forecast: forecast.forecastText,
+            warnings: forecast.warnings || [],
             status: computeOverallStatus(validWeather ? weather : [], validRivers ? rivers : [], validReservoirs ? reservoirs : [])
         };
 

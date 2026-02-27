@@ -9,6 +9,7 @@ export interface AemetForecastData {
     forecastText: string;
     probabilityPrecipitation: number;
     hydro60DayAcc: number;
+    warnings: string[];
 }
 
 const AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrcmliYW50eGVza0BnbWFpbC5jb20iLCJqdGkiOiJjODVmMDI3NC03YzA0LTQ1ODktYmJkNy0zMDdlZTg3MGFmMDIiLCJpc3MiOiJBRU1FVCIsImlhdCI6MTc3MTc4NTYzNSwidXNlcklkIjoiYzg1ZjAyNzQtN2MwNC00NTg5LWJiZDctMzA3ZWU4NzBhZjAyIiwicm9sZSI6IiJ9.R_1TDlmRsFnyuflIRKFIfOwZecEHYAekkx-ESxdFHfU";
@@ -23,7 +24,8 @@ export async function scrapeAemet(): Promise<{ stations: WeatherStationData[], f
     const forecastData: AemetForecastData = {
         forecastText: "Periodo Estable",
         probabilityPrecipitation: 0,
-        hydro60DayAcc: 0
+        hydro60DayAcc: 0,
+        warnings: []
     };
 
     try {
@@ -131,6 +133,40 @@ export async function scrapeAemet(): Promise<{ stations: WeatherStationData[], f
             }
         } catch (e) {
             console.error('Error fetching AEMET 60-day history:', e);
+        }
+
+        // === PART 4: Weather Warnings (Avisos) for Cadiz ===
+        try {
+            const avisosUrl = `https://opendata.aemet.es/opendata/api/avisos/nacional?api_key=${AEMET_API_KEY}`;
+            const resAvisos = await fetch(avisosUrl, { signal: AbortSignal.timeout(5000) });
+            const datAvisos = await resAvisos.json();
+
+            if (datAvisos.estado === 200) {
+                const dataRes = await fetch(datAvisos.datos);
+                const avisosArray = await dataRes.json();
+
+                // Usually returns an array or an object depending on the active alerts
+                // The structure usually has avisos with a 'nombreAviso', 'nivel', and 'provincia' or geographical ID
+                // We'll filter loosely for Cadiz
+                const activeWarnings = new Set<string>();
+
+                if (Array.isArray(avisosArray)) {
+                    avisosArray.forEach((aviso: any) => {
+                        const area = (aviso.zonaGeografica || aviso.name || '').toUpperCase();
+                        if (area.includes('CÁDIZ') || area.includes('CADIZ') || area.includes('GRAZALEMA')) {
+                            const level = aviso.nivelAviso || 'Amarillo'; // default to yellow if missing
+                            const fenomeno = aviso.nombreElemento || aviso.tipoAviso || 'Meteo';
+                            activeWarnings.add(`Alerta ${level}: ${fenomeno} en ${aviso.zonaGeografica}`);
+                        }
+                    });
+                }
+
+                if (activeWarnings.size > 0) {
+                    forecastData.warnings = Array.from(activeWarnings);
+                }
+            }
+        } catch (e) {
+            console.error('Error fetching AEMET warnings:', e);
         }
 
     } catch (error) {
