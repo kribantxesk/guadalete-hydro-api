@@ -1,0 +1,181 @@
+<html><head></head><body><div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h4 class="modal-title">JUNTA DE LOS RÍOS (CA) - NIVEL RÍO</h4>
+</div>
+
+<div class="modal-body">
+    <div class="col-sm-12" style="font-size:12px;padding-left:24px;padding-bottom:20px;">
+        <b>m.</b>
+    </div>
+    <div class="col-sm-12" id="anchoCanvas"><iframe class="chartjs-hidden-iframe" tabindex="-1" style="display: block; overflow: hidden; border: 0px; margin: 0px; inset: 0px; height: 100%; width: 100%; position: absolute; pointer-events: none; z-index: -1;"></iframe>
+        <canvas id="canvas" class="canvasStyle" style="height: 656px; width: 1264px; display: block;" width="1264" height="656"></canvas>
+    </div>
+</div>
+
+<div class="modal-footer" style="padding-top:10px;">
+    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+</div>
+
+<script src="https://www.redhidrosurmedioambiente.es/saih/assets/js/Chart.bundle.js"></script>
+
+<script>
+(function () {
+    var ctx = document.getElementById("canvas").getContext("2d");
+
+    // tamaño (tu hack)
+    var swidth = 56, sheight = 40;
+    if (screen.width<1700) swidth = 50;
+    if (screen.width<1600) swidth = 44;
+    if (screen.width<1400) swidth = 35;
+    if (screen.width<1200) swidth = 25;
+    if (screen.width<900)  swidth = 32;
+    if (screen.width<600)  swidth = 20;
+    if (screen.height<450) sheight = 1;
+    ctx.canvas.width  = screen.width - ((swidth*screen.width)/100);
+    ctx.canvas.height = screen.height - ((sheight*screen.height)/100);
+
+    // destruir si ya existe (reabrir modal)
+    if (window.__saihChart) {
+        try { window.__saihChart.destroy(); } catch(e) {}
+    }
+
+    var labels = ["20\/02\/26 19:00","20\/02\/26 20:00","20\/02\/26 21:00","20\/02\/26 22:00","20\/02\/26 23:00","21\/02\/26 00:00","21\/02\/26 01:00","21\/02\/26 02:00","21\/02\/26 03:00","21\/02\/26 04:00","21\/02\/26 05:00","21\/02\/26 06:00","21\/02\/26 07:00","21\/02\/26 08:00","21\/02\/26 09:00","21\/02\/26 10:00","21\/02\/26 11:00","21\/02\/26 12:00","21\/02\/26 13:00","21\/02\/26 14:00","21\/02\/26 15:00","21\/02\/26 16:00","21\/02\/26 17:00","21\/02\/26 18:00","21\/02\/26 19:00","21\/02\/26 20:00","21\/02\/26 21:00","21\/02\/26 22:00","21\/02\/26 23:00","22\/02\/26 00:00","22\/02\/26 01:00","22\/02\/26 02:00","22\/02\/26 03:00","22\/02\/26 04:00","22\/02\/26 05:00","22\/02\/26 06:00","22\/02\/26 07:00","22\/02\/26 08:00","22\/02\/26 09:00","22\/02\/26 10:00","22\/02\/26 11:00","22\/02\/26 12:00","22\/02\/26 13:00","22\/02\/26 14:00","22\/02\/26 15:00","22\/02\/26 16:00","22\/02\/26 17:00","22\/02\/26 18:00","22\/02\/26 19:00"];
+    var serie1 = [2.85,2.84,2.83,2.82,2.82,2.82,2.81,2.81,2.81,null,null,null,null,null,2.8,2.8,2.8,2.8,2.8,2.8,2.8,2.8,2.8,2.77,2.71,2.63,2.53,2.43,2.32,2.23,2.14,2.06,1.99,1.92,1.86,1.81,1.76,1.73,1.7,1.66,1.63,1.59,1.57,1.55,1.54,1.52,1.52,1.51,1.5];
+
+    var sensorTipo = "R";
+
+    if (sensorTipo !== 'P' && sensorTipo !== 'N') {
+        var lineChartData = {
+            labels: labels,
+            datasets: [{
+            label: "NIVEL R\u00cdO",
+
+                borderColor: "rgba(151,187,205,1)",
+                backgroundColor: "rgba(151,187,205,0.4)",
+                fill: true,
+                data: serie1,
+                yAxisID: "y-axis-1",
+                pointRadius: 0
+            }
+                        ,{
+                label: 'Nivel 1',
+                borderColor: "rgba(255,255,0,1)",
+                backgroundColor: "rgba(255,255,0,1)",
+                fill: false,
+                radius: 0,
+                borderWidth: 1,
+                data: labels.map(function(){ return 3.2; }),
+                yAxisID: "y-axis-1",
+            },{
+                label: 'Nivel 2',
+                borderColor: "rgba(255,128,0,1)",
+                backgroundColor: "rgba(255,128,0,1)",
+                fill: false,
+                radius: 0,
+                borderWidth: 1,
+                data: labels.map(function(){ return 4; }),
+                yAxisID: "y-axis-1",
+            },{
+                label: 'Nivel 3',
+                borderColor: "rgba(255,0,0,1)",
+                backgroundColor: "rgba(255,0,0,1)",
+                fill: false,
+                radius: 0,
+                borderWidth: 1,
+                data: labels.map(function(){ return 5; }),
+                yAxisID: "y-axis-1",
+            }
+                        ]
+        };
+
+        window.__saihChart = new Chart(ctx, {
+            type: 'line',
+            data: lineChartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                hoverMode: 'index',
+                stacked: false,
+                legend: { display: true },
+                scales: {
+                    yAxes: [{
+                        type: "linear",
+                        display: true,
+                        position: "left",
+                        id: "y-axis-1",
+                        ticks: {
+                                                        beginAtZero: true,
+                                                        max: 9.39                        }
+                    }]
+                },
+                tooltips: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    intersect: false
+                }
+            }
+        });
+
+    } else {
+        var barChartData = {
+            labels: labels,
+            datasets: [{
+                type: 'bar',
+                label: "Nivometr\u00eda horaria",
+                borderColor: "rgba(151,187,205,1)",
+                backgroundColor: "rgba(151,187,205,0.4)",
+                data: serie1,
+                yAxisID: "y-axis-1"
+            },{
+                type: 'line',
+                label: "Precipitaci\u00f3n acumulada",
+                borderColor: "rgba(43,14,141,1)",
+                backgroundColor: "rgba(43,14,141,1)",
+                fill: false,
+                radius: 0,
+                borderWidth: 1,
+                data: [],
+                yAxisID: "y-axis-2"
+            }]
+        };
+
+        window.__saihChart = new Chart(ctx, {
+            type: 'bar',
+            data: barChartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                hoverMode: 'index',
+                stacked: false,
+                legend: { display: true },
+                scales: {
+                    yAxes: [{
+                        type: "linear",
+                        display: true,
+                        position: "left",
+                        id: "y-axis-1",
+                        scaleLabel: { display: true, labelString: "" },
+                        ticks: { beginAtZero: true, max: 9.39 }
+                    },{
+                        type: "linear",
+                        display: true,
+                        position: "right",
+                        id: "y-axis-2",
+                        scaleLabel: {
+                            display: true,
+                            labelString: "Precipitaci\u00f3n acumulada"                        },
+                        ticks: { beginAtZero: true, max: 1 }
+                    }]
+                },
+                tooltips: {
+                    enabled: true,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    intersect: false
+                }
+            }
+        });
+    }
+
+})();
+</script>
+</body></html>
