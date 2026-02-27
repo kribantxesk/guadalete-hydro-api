@@ -7,6 +7,7 @@ import { scrapeAemet } from './scrapers/aemet';
 import { scrapeSaih } from './scrapers/saih';
 import { scrapeEmbalses } from './scrapers/embalses';
 import { scrapeOpenMeteoCoastal } from './scrapers/openmeteo';
+import { supabase } from './lib/supabase';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -135,6 +136,35 @@ async function runScrapers() {
             status: computeOverallStatus(validWeather ? weather : [], validRivers ? rivers : [], validReservoirs ? reservoirs : [])
         };
 
+        // --- SUPABASE HISTORICAL PERSISTENCE ---
+        if (supabase) {
+            const timestamp = new Date().toISOString();
+
+            if (validRivers) {
+                const riverInserts = rivers.map(r => ({
+                    station_name: r.name,
+                    level: r.level,
+                    flow: r.flow,
+                    timestamp
+                }));
+                supabase.from('river_levels').insert(riverInserts).then(({ error }) => {
+                    if (error) console.error('Supabase river insert error:', error.message);
+                });
+            }
+
+            if (validReservoirs) {
+                const reservoirInserts = reservoirs.map(r => ({
+                    reservoir_name: r.name,
+                    percentage: r.percentage,
+                    volume: r.volume,
+                    timestamp
+                }));
+                supabase.from('reservoir_levels').insert(reservoirInserts).then(({ error }) => {
+                    if (error) console.error('Supabase reservoir insert error:', error.message);
+                });
+            }
+        }
+
         // Persist to local cache file
         try {
             fs.writeFileSync(CACHE_FILE, JSON.stringify(cachedData), 'utf-8');
@@ -158,6 +188,43 @@ function computeOverallStatus(weather: any[], rivers: any[], reservoirs: any[]) 
 // REST Endpoint
 app.get('/api/status', (req, res) => {
     res.json(cachedData);
+});
+
+// Historical Endpoint
+app.get('/api/history', async (req, res) => {
+    if (!supabase) {
+        return res.status(503).json({ error: "Supabase no está configurado." });
+    }
+
+    try {
+        // Fetch last 24h of river data
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+        const { data: riverData, error: riverError } = await supabase
+            .from('river_levels')
+            .select('*')
+            .gte('timestamp', twentyFourHoursAgo)
+            .order('timestamp', { ascending: true });
+
+        if (riverError) throw riverError;
+
+        // Group by station
+        const historyByStation: Record<string, any[]> = {};
+        riverData?.forEach(row => {
+            if (!historyByStation[row.station_name]) {
+                historyByStation[row.station_name] = [];
+            }
+            historyByStation[row.station_name].push({
+                time: new Date(row.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+                level: row.level,
+                flow: row.flow
+            });
+        });
+
+        res.json({ source: 'supabase', riverHistory: historyByStation });
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // Start Server and Cron
