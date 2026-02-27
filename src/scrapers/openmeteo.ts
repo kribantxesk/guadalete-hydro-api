@@ -15,7 +15,7 @@ export async function scrapeOpenMeteoCoastal(): Promise<CoastalData> {
         const windUrl = 'https://api.open-meteo.com/v1/forecast?latitude=36.53&longitude=-6.29&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe%2FMadrid';
 
         // Fetch Marine Data (Waves)
-        const resA = await fetch(marineUrl, { signal: AbortSignal.timeout(5000) });
+        const resA = await fetch(marineUrl, { signal: AbortSignal.timeout(15000) });
         if (resA.ok) {
             const dataA = await resA.json();
             // Get the current hour index or just the first available hourly forecast
@@ -35,7 +35,7 @@ export async function scrapeOpenMeteoCoastal(): Promise<CoastalData> {
         }
 
         // Fetch Wind Data
-        const resB = await fetch(windUrl, { signal: AbortSignal.timeout(5000) });
+        const resB = await fetch(windUrl, { signal: AbortSignal.timeout(15000) });
         if (resB.ok) {
             const dataB = await resB.json();
             if (dataB.current) {
